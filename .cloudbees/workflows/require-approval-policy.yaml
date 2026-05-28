@@ -35,7 +35,7 @@ jobs:
     needs:
     - scan-and-evaluate
     with:
-      policy-id: 9517fa03-035b-411c-a8d1-bafb4345697f
+      policy-id: ae0cb15b-3513-4b55-8356-8e97fdd2f349
       input-data: ${{ needs.scan-and-evaluate.outputs.policy-subject }}
   
   deploy:
