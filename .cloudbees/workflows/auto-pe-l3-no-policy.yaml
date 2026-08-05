@@ -1,0 +1,12 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: workflow
+name: auto-pe-l3-no-policy
+on:
+  workflow_dispatch: {}
+jobs:
+  run:
+    steps:
+      - name: No-policy workflow placeholder
+        uses: docker://alpine:3.19
+        run: echo "Provides noPolicyRunId for L3 boundary no-policy short-circuit test"
+
