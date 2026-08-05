@@ -1,0 +1,12 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: workflow
+name: auto-pe-l3-boundary-checks
+
+on:
+  workflow_dispatch: {}
+jobs:
+  run:
+    steps:
+      - name: L3 boundary workflow placeholder
+        uses: docker://alpine:3.19
+        run: echo "Provides workflow run context for Policy Engine L3 boundary evaluation tests"
