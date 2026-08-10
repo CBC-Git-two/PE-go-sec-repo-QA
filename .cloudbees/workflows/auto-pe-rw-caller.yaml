@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 jobs:
   call-reusable:
-    uses: <REPO_CLONE_URL>/.cloudbees/workflows/auto-pe-reusable-wf.yaml
+    uses: .cloudbees/workflows/auto-pe-reusable-wf.yaml
 
   independent-job:
     steps:
