@@ -9,16 +9,13 @@ jobs:
 
   independent-job:
     steps:
-      - name: Independent step
+      - name: Run
         uses: docker://alpine:3.19
-        shell: sh
-        run: echo "This job must be absent when entry BLOCK fires"
-
+        run: echo "independent job"
   post-rw-job:
-    needs:
-      - call-reusable
+    needs: call-reusable
     steps:
-      - name: Post-RW step
+      - name: Run
         uses: docker://alpine:3.19
-        shell: sh
-        run: echo "This job must be absent when entry BLOCK fires"
+        run: echo "dependent job"
+
