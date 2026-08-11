@@ -1,0 +1,26 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: workflow
+# Nested reusable workflow — called by auto-pe-reusable-wf to form a two-level chain:
+#   auto-pe-rw-caller → auto-pe-reusable-wf → auto-pe-reusable-wf-2
+#
+# Used by TC-AC6 and TC-AC7 (two-level inheritance tests):
+#   AC6: Parent=BLOCK, RW1=REVIEW, RW2=CONTINUE → combined result BLOCK (strictest wins)
+#   AC7: RW2=BLOCK (own policy) → result BLOCK immediately, no further traversal
+#
+# Deploy to: policyengine-automation-organization component (callerComponentId in test-data)
+# Workflow name must match nestedReusableWorkflowName in policy.QA.yaml: auto-pe-reusable-wf-2
+name: auto-pe-reusable-wf-2
+
+on:
+  workflow_call: {}
+
+permissions:
+  scm-token-own: read
+  scm-token-org: read
+
+jobs:
+  nested-reusable-job:
+    steps:
+      - name: Nested reusable workflow step
+        uses: docker://alpine:latest
+        run: echo "nested reusable workflow (level 2) running"
