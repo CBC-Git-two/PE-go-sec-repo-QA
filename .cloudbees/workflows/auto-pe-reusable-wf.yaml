@@ -1,12 +1,31 @@
 apiVersion: automation.cloudbees.io/v1alpha1
 kind: workflow
+# Reusable workflow (level 1) — called by auto-pe-rw-caller* workflows.
+# Also calls auto-pe-reusable-wf-2 to form the two-level chain used in AC6/AC7 tests.
+#
+# Chain: auto-pe-rw-caller → auto-pe-reusable-wf (this file) → auto-pe-reusable-wf-2
+#
+# Policies scoped to this workflow name (reusableWorkflowName in test-data) are evaluated
+# at its L3 boundary. Tests assert whether they block the invoking job in the parent
+# workflow or propagate further up the caller chain.
+#
+# Deploy to: policyengine-automation-organization component (callerComponentId in test-data)
+# Workflow name must match reusableWorkflowName in policy.QA.yaml: auto-pe-reusable-wf
 name: auto-pe-reusable-wf
+
 on:
-  workflow_call:
+  workflow_call: {}
+
+permissions:
+  scm-token-own: read
+  scm-token-org: read
+
 jobs:
-  run:
+  reusable-job:
     steps:
-      - name: Placeholder step
-        uses: docker://alpine:3.19
-        shell: sh
-        run: echo "Reusable workflow — policy inheritance target"
+      - name: Reusable workflow step
+        uses: docker://alpine:latest
+        run: echo "reusable workflow (level 1) running"
+
+  call-nested-reusable:
+    uses: .cloudbees/workflows//auto-pe-reusable-wf-2.yaml
