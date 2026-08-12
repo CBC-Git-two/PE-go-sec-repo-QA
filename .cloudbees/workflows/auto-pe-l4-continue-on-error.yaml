@@ -1,0 +1,49 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: workflow
+name: auto-pe-l4-continue-on-error
+
+# CBP-54993 — target workflow proving `continue-on-error` does NOT override an
+# L4 inline policy BLOCK.
+#
+# Identical to auto-pe-l4-inline-checks.yaml except the subject-producing step
+# sets `continue-on-error: true`.
+#
+# Resolved design decision ("Policy Engine Integration — Workflow Execution Flow",
+# §L4 open questions): continue-on-error has NO effect on the result of a policy
+# evaluation. If the Policy Engine decides the run should be BLOCKED, that is
+# honored and the run stops regardless of the step's continue-on-error setting.
+#
+# So with a matching BLOCK policy scoped to this workflow, the expected outcome is
+# still a FAILED run — not a run that continues past the blocked step.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  scm-token-own: read
+  scm-token-org: read
+  id-token: write
+
+jobs:
+  scan:
+    outputs:
+      policy-subject: ${{ steps.gosec-step.outputs.policy-subject }}
+    steps:
+      - name: checkout-source-code
+        id: getscm
+        uses: cloudbees-io/checkout@v1
+
+      - id: gosec-step
+        name: Gosec scan with continue-on-error - policy BLOCK must still halt the run
+        kind: scan
+        continue-on-error: true
+        uses: cloudbees-io/gosec-plugin@v1
+
+      # If continue-on-error were (incorrectly) honored over a policy BLOCK, this
+      # step would run and the workflow would reach SUCCEEDED. It must not.
+      - id: should-not-run-on-block
+        name: Print gosec outputs - must not run when the inline check blocks
+        uses: docker://alpine:latest
+        run: |
+          echo "High: ${{ steps.gosec-step.outputs.high-count }}"
+          echo "Policy Subject: ${{ steps.gosec-step.outputs.policy-subject }}"
