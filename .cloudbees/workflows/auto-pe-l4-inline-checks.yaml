@@ -1,0 +1,57 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: workflow
+name: auto-pe-l4-inline-checks
+
+# CBP-54993 — target workflow for L4 inline (implicit) policy check tests.
+#
+# The gosec-plugin step emits a `policy-subject` output (a vulnerability_scan
+# subject). Per "Policy Engine Integration — Workflow Execution Flow"
+# (§L4 Automatic Subject-Triggered Evaluation), the workflow engine detects that
+# output at STEP COMPLETION and implicitly calls EvaluateByContext with
+# checkpoint { type: "job", name: "scan", position: "within" }, then acts on the
+# reconciled action:
+#   continue / warn / audit -> step completes, run proceeds
+#   block                   -> run halts (FAILED)
+#   REVIEW                  -> not supported at step termination, treated as BLOCK
+#
+# NOTE: there is intentionally NO explicit `policy-evaluation` job here (unlike
+# evaluate-by-context-workflowType.yaml, which calls
+# cloudbees-io/policy-utils/evaluate-policy-context). The point of an L4 inline
+# check is that the engine fires the evaluation automatically; adding an explicit
+# evaluation job would exercise the explicit path instead.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  scm-token-own: read
+  scm-token-org: read
+  id-token: write
+
+jobs:
+  scan:
+    outputs:
+      policy-subject: ${{ steps.gosec-step.outputs.policy-subject }}
+    steps:
+      - name: checkout-source-code
+        id: getscm
+        uses: cloudbees-io/checkout@v1
+
+      - id: gosec-step
+        name: Gosec scan - emits policy-subject, triggers the L4 inline check
+        kind: scan
+        uses: cloudbees-io/gosec-plugin@v1
+
+      # Runs only when the inline check did NOT block, so its presence/absence in
+      # the run is itself a signal of the L4 outcome.
+      - id: print-gosec-outputs
+        name: Print gosec outputs
+        uses: docker://alpine:latest
+        run: |
+          echo "Gosec outputs:"
+          echo "Critical: ${{ steps.gosec-step.outputs.critical-count }}"
+          echo "Very high: ${{ steps.gosec-step.outputs.very-high-count }}"
+          echo "High: ${{ steps.gosec-step.outputs.high-count }}"
+          echo "Medium: ${{ steps.gosec-step.outputs.medium-count }}"
+          echo "Low: ${{ steps.gosec-step.outputs.low-count }}"
+          echo "Policy Subject: ${{ steps.gosec-step.outputs.policy-subject }}"
