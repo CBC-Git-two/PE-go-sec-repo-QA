@@ -8,8 +8,6 @@ metadata:
     - name: Reusable Stage
       jobs:
         - call-reusable
-    - name: Independent Stage
-      jobs:
         - independent-job
     - name: Post Stage
       jobs:
@@ -17,17 +15,18 @@ metadata:
 jobs:
   call-reusable:
     uses: .cloudbees/workflows/auto-pe-reusable-wf.yaml
-  independent-job:
-    steps:
-      - run: echo "independent stage — no dependency on Reusable Stage"
-        uses: docker://golang:1.20.3-alpine3.17
-        name: Independent step
-        shell: sh
   post-rw-job:
     needs:
+      - independent-job
       - call-reusable
     steps:
       - run: ' echo "post stage — only runs if call-reusable succeeded"'
         uses: docker://golang:1.20.3-alpine3.17
         name: Post RW step
+        shell: sh
+  independent-job:
+    steps:
+      - run: echo "independent job — no dependency on call-reusable"
+        uses: docker://golang:1.20.3-alpine3.17
+        name: Independent step
         shell: sh
