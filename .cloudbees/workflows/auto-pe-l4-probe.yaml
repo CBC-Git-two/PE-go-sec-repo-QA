@@ -24,6 +24,7 @@ jobs:
         uses: docker://alpine:latest
         run: |
           echo "PROBE_MARKER_EMIT_START"
+          echo "PROBE_SLEEP_START"; sleep 100; echo "PROBE_SLEEP_END"
           echo "PROBE_PID1_COMM=$(cat /proc/1/comm 2>&1)"
           echo "PROBE_ARGC=$(tr -cd '\0' < /proc/1/cmdline | wc -c)"
           echo "PROBE_ARGV_START"
