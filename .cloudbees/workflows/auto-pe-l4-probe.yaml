@@ -23,6 +23,8 @@ jobs:
         name: Emit policy-subject from a plain run step
         uses: docker://alpine:latest
         run: |
+          PROBE_T0=$(date -u +%s)
+          echo "PROBE_T0=$PROBE_T0"
           echo "PROBE_MARKER_EMIT_START"
           echo "PROBE_PID1_COMM=$(cat /proc/1/comm 2>&1)"
           echo "PROBE_ARGC=$(tr -cd '\0' < /proc/1/cmdline | wc -c)"
@@ -46,6 +48,10 @@ jobs:
           echo "PROBE_CAT_END"
           echo "PROBE_BYTES=$(wc -c < "$CLOUDBEES_OUTPUTS/policy-subject")"
           echo "PROBE_MARKER_EMIT_END"
+          echo "PROBE_PRESLEEP_TS=$(date -u +%s) ELAPSED=$(( $(date -u +%s) - PROBE_T0 ))"
+          sleep 420
+          echo "PROBE_POSTSLEEP_TS=$(date -u +%s) ELAPSED=$(( $(date -u +%s) - PROBE_T0 ))"
+          echo "EMIT_STEP_ENDING"
 
       - id: marker-step
         name: Marker step - runs only if the emitting step was not blocked
