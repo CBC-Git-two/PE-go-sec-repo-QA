@@ -1,0 +1,26 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: workflow
+name: auto-pe-job-boundary-review
+
+on:
+  workflow_dispatch:
+
+jobs:
+  scan-job:
+    steps:
+      - name: Emit vulnerability scan subject
+        uses: docker://alpine:3.18
+        run: |
+          cat <<'EOF'
+          policy_subject:
+            type: vulnerability_scan
+            data:
+              summary:
+                by_severity:
+                  total: 8
+                  critical: 0
+                  high: 1
+                  medium: 5
+                  low: 2
+          EOF
+          echo "Scan complete"
