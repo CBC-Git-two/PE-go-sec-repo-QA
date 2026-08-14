@@ -1,0 +1,46 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: workflow
+name: auto-pe-l4-probe
+
+# SCRATCH probe workflow for the L4 inline-check investigation (CBP-54993).
+# Deliberately uses a plain run: step (not a composite action) so the engine's
+# stepbuilder definitely instruments it with --policy-engine-inline-checks=true,
+# and the step writes <outputs>/policy-subject itself so the runtime hook's only
+# precondition is satisfied on-disk and provably so in the step log.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  scm-token-own: read
+  scm-token-org: read
+  id-token: write
+
+jobs:
+  scan:
+    steps:
+      - id: emit-subject
+        name: Emit policy-subject from a plain run step
+        uses: docker://alpine:latest
+        run: |
+          echo "PROBE_MARKER_EMIT_START"
+          echo "PROBE_CLOUDBEES_OUTPUTS=[$CLOUDBEES_OUTPUTS]"
+          echo "PROBE_ENV_DUMP_START"
+          env | sort
+          echo "PROBE_ENV_DUMP_END"
+          printf '%s' '[{"type":"vulnerability_scan","data":{"summary":{"by_severity":{"total":8,"critical":0,"high":1,"medium":5,"low":2}}}}]' > "$CLOUDBEES_OUTPUTS/policy-subject"
+          echo "PROBE_LS_START"
+          ls -la "$CLOUDBEES_OUTPUTS"
+          echo "PROBE_LS_END"
+          echo "PROBE_CAT_START"
+          cat "$CLOUDBEES_OUTPUTS/policy-subject"
+          echo ""
+          echo "PROBE_CAT_END"
+          echo "PROBE_BYTES=$(wc -c < "$CLOUDBEES_OUTPUTS/policy-subject")"
+          echo "PROBE_MARKER_EMIT_END"
+
+      - id: marker-step
+        name: Marker step - runs only if the emitting step was not blocked
+        uses: docker://alpine:latest
+        run: |
+          echo "PROBE_MARKER_STEP_EXECUTED"
