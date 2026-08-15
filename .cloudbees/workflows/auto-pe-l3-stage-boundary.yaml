@@ -1,0 +1,65 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: workflow
+name: auto-pe-l3-stage-boundary
+
+# CBP-54996 — target workflow for the L3 STAGE boundary tests (stage.entry / stage.exit).
+#
+# Declares a named stage `Release Readiness` containing a single job whose step emits a
+# vulnerability_scan policy-subject (high=1, matching testData.payload in policy.<ENV>.yaml).
+# The Workflow Engine calls EvaluateByContext with
+# checkpoint { type: "stage", name: "Release Readiness", position: "entry"|"exit" }.
+#
+# A SECOND stage `Post Stage` follows it. That is deliberate and load-bearing for the
+# enforcement layer: a stage.exit BLOCK on Release Readiness must stop the run BEFORE
+# post-stage begins. Without a following stage, a stage.exit gate and a workflow.exit gate
+# would be indistinguishable from the run's status alone.
+#
+# The subject is written by a plain `run:` step (not a composite scan action) so the emission
+# is fast, deterministic, and provable from the step log (ls -la + cat below) — same shape as
+# the auto-pe-l4-probe.yaml probe workflow.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  scm-token-own: read
+  scm-token-org: read
+  id-token: write
+
+metadata:
+  stages/v1alpha1:
+    - name: Release Readiness
+      jobs:
+        - scan
+    - name: Post Stage
+      jobs:
+        - post-stage
+
+jobs:
+  scan:
+    outputs:
+      policy-subject: ${{ steps.emit-subject.outputs.policy-subject }}
+    steps:
+      - id: emit-subject
+        name: Emit vulnerability_scan policy-subject (high=1)
+        uses: docker://alpine:latest
+        run: |
+          printf '%s' '[{"type":"vulnerability_scan","data":{"summary":{"by_severity":{"total":8,"critical":0,"high":1,"medium":5,"low":2}}}}]' > "$CLOUDBEES_OUTPUTS/policy-subject"
+          echo "SUBJECT_LS_START"
+          ls -la "$CLOUDBEES_OUTPUTS"
+          echo "SUBJECT_LS_END"
+          echo "SUBJECT_CAT_START"
+          cat "$CLOUDBEES_OUTPUTS/policy-subject"
+          echo ""
+          echo "SUBJECT_CAT_END"
+          echo "SUBJECT_BYTES=$(wc -c < "$CLOUDBEES_OUTPUTS/policy-subject")"
+
+  post-stage:
+    needs:
+      - scan
+    steps:
+      - id: post-stage-marker
+        name: Post-stage marker - runs only if Release Readiness exited cleanly
+        uses: docker://alpine:latest
+        run: |
+          echo "POST_STAGE_EXECUTED"
