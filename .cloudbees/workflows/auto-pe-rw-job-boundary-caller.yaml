@@ -6,7 +6,7 @@ on:
     
 jobs:
   reusable-job:
-    uses: .cloudbees/workflows/auto-pe-rw-job-boundar.yaml
+    uses: .cloudbees/workflows/auto-pe-rw-job-boundary.yaml
 
   independent-job:
     steps:
