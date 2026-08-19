@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     
 jobs:
-  call-reusable:
+  reusable-job:
     uses: .cloudbees/workflows/auto-pe-rw-job-boundar.yaml
 
   independent-job:
@@ -17,7 +17,7 @@ jobs:
 
   post-rw-job:
     needs:
-      - call-reusable
+      - reusable-job
     steps:
       - name: Post-RW step
         uses: docker://alpine:3.19
