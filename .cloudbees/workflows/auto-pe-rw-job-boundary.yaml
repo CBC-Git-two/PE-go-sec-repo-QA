@@ -9,3 +9,8 @@
         - name: Run
           uses: docker://alpine:3.19
           run: echo "reusable workflow job"
+    independent-job:
+      steps:
+        - name: Run step
+          uses: docker://alpine:3.18
+          run: echo "independent-job running"
