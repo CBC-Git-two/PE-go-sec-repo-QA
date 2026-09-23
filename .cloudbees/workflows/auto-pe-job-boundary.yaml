@@ -2,7 +2,7 @@ apiVersion: automation.cloudbees.io/v1alpha1
 kind: workflow
 name: auto-pe-job-boundary
 on:
-  workflow_dispatch:
+  workflow_dispatch: {}
 jobs:
   scan-job:
     steps:
