@@ -1,0 +1,51 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: workflow
+name: auto-pe-ui-stage-boundary
+
+# CBP-71635 — used by tests/policy-engine/ui/stagePolicyCheckpoint.e2e.test.ts
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  scm-token-own: read
+  scm-token-org: read
+  id-token: write
+
+metadata:
+  stages/v1alpha1:
+    - name: build
+      jobs:
+        - compile
+    - name: test
+      jobs:
+        - security-scan
+    - name: deploy
+      jobs:
+        - deploy-staging
+
+jobs:
+  compile:
+    steps:
+      - name: Compile
+        uses: docker://alpine:3.20
+        run: echo "compiling"
+
+  security-scan:
+    needs:
+      - compile
+    steps:
+      - name: Checkout
+        uses: cloudbees-io/checkout@v1
+      - id: gosec-step
+        name: Scan with Gosec
+        uses: cloudbees-io/gosec-plugin@v1
+
+  deploy-staging:
+    needs:
+      - security-scan
+    steps:
+      - id: deploy-marker
+        name: Deploy marker - runs only if the test stage exited cleanly
+        uses: docker://alpine:3.20
+        run: echo "DEPLOY_STAGING_EXECUTED"
